@@ -3,7 +3,7 @@ import { statement } from "./statement";
 test("一定の観客数までは固定金額を請求する", () => {
   const invoice = {
     customer: "Walt",
-    performance: [
+    performances: [
       {
         playID: "hamlet",
         audience: 30,
@@ -37,7 +37,7 @@ You earned 4 credits
 test("観客数に応じて課金される", () => {
   const invoice = {
     customer: "BigCo",
-    performance: [
+    performances: [
       {
         playID: "hamlet",
         audience: 55,

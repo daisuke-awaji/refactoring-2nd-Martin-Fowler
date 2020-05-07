@@ -1,10 +1,11 @@
 interface IInvoice {
   customer: string;
-  performance: IPerformance[];
+  performances: IPerformance[];
 }
 interface IPerformance {
   playID: string;
   audience: number;
+  play: IPlay;
 }
 
 interface IPlay {
@@ -15,20 +16,42 @@ interface IPlays {
   [name: string]: IPlay;
 }
 
+// function renderHtmlText(info) {
+
+// }
+
 export function statement(invoice: IInvoice, plays: IPlays) {
-  let result = `Statement for ${invoice.customer}\n`;
-  for (let perf of invoice.performance) {
-    result += ` ${playFor(perf).name}: ${usd(amountFor(perf))} (${
+  const statementData = {
+    customer: invoice.customer,
+    performances: invoice.performances.map(enrichPerformance),
+  };
+  return renderPlainText(statementData);
+
+  function enrichPerformance(performance: IPerformance) {
+    const play = playFor(performance);
+    const result = { ...performance, play };
+    return result;
+  }
+
+  function playFor(perf: IPerformance) {
+    return plays[perf.playID];
+  }
+}
+
+function renderPlainText(data: any) {
+  let result = `Statement for ${data.customer}\n`;
+  for (let perf of data.performances) {
+    result += ` ${perf.play.name}: ${usd(amountFor(perf))} (${
       perf.audience
     } seats)\n`;
   }
-  result += `Amount owed is ${usd(totalAmounts(invoice.performance))}\n`;
-  result += `You earned ${totalVolumeCredits(invoice.performance)} credits\n`;
+  result += `Amount owed is ${usd(totalAmounts())}\n`;
+  result += `You earned ${totalVolumeCredits()} credits\n`;
   return result;
 
-  function totalAmounts(performance: IPerformance[]) {
+  function totalAmounts() {
     let totalAmount = 0;
-    for (let perf of invoice.performance) {
+    for (let perf of data.performances) {
       totalAmount += amountFor(perf);
     }
     return totalAmount;
@@ -42,25 +65,23 @@ export function statement(invoice: IInvoice, plays: IPlays) {
     }).format(aNumber / 100);
   }
 
-  function totalVolumeCredits(performance: IPerformance[]) {
+  function totalVolumeCredits() {
     let result = 0;
-    for (let perf of performance) {
-      result += volumeCreditsFor(perf, playFor(perf));
+    for (let perf of data.performances) {
+      result += volumeCreditsFor(perf);
     }
     return result;
   }
 
-  function volumeCreditsFor(perf: IPerformance, play: IPlay) {
+  function volumeCreditsFor(perf: IPerformance) {
     let result = Math.max(perf.audience - 30, 0);
-    if ("comedy" === play.type) result += Math.floor(perf.audience / 5);
+    if ("comedy" === perf.play.type) result += Math.floor(perf.audience / 5);
     return result;
   }
-  function playFor(perf: IPerformance) {
-    return plays[perf.playID];
-  }
+
   function amountFor(perf: IPerformance) {
     let result = 0;
-    switch (playFor(perf).type) {
+    switch (perf.play.type) {
       case "tragedy":
         const TRAGEDY_BASE_USD = 40000;
         result = TRAGEDY_BASE_USD;
@@ -77,7 +98,7 @@ export function statement(invoice: IInvoice, plays: IPlays) {
         result += 300 * perf.audience;
         return result;
       default:
-        throw new Error(`unknown type: ${playFor(perf).type}`);
+        throw new Error(`unknown type: ${perf.play.type}`);
     }
   }
 }
